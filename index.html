@@ -19,10 +19,13 @@
       width: 100vw;
       touch-action: pan-x;
     }
+
+    /* ── Gallery: horizontal (default) ── */
     .gallery-container {
       width: 100vw;
       height: 100vh;
       overflow-x: auto;
+      overflow-y: hidden;
       scroll-snap-type: x mandatory;
       display: flex;
       -webkit-overflow-scrolling: touch;
@@ -38,6 +41,20 @@
       scroll-snap-align: start;
       flex: 0 0 auto;
     }
+
+    /* ── Gallery: vertical mode ── */
+    body.vertical { touch-action: pan-y; }
+    body.vertical .gallery-container {
+      overflow-x: hidden;
+      overflow-y: auto;
+      scroll-snap-type: y mandatory;
+      flex-direction: column;
+    }
+    body.vertical .gallery {
+      flex-direction: column;
+      height: auto;
+    }
+
     #touchCounter {
       position: fixed;
       bottom: 10px;
@@ -49,6 +66,7 @@
       z-index: 1000;
       font-family: Arial, sans-serif;
       font-size: 12px;
+      transition: opacity 0.3s;
     }
     #fullScreenImage {
       display: none;
@@ -75,44 +93,649 @@
       font-family: Arial, sans-serif;
       font-size: 12px;
     }
+
+    /* ── Settings button ── */
+    #settingsBtn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: 40px;
+      height: 40px;
+      background-color: rgba(0, 0, 0, 0.08);
+      border: none;
+      border-radius: 50%;
+      z-index: 1001;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #settingsBtn svg {
+      width: 22px;
+      height: 22px;
+      fill: #444444;
+      transition: transform 0.4s ease;
+    }
+    #settingsBtn.open svg { transform: rotate(90deg); }
+
+    /* ── Overlay ── */
+    #settingsOverlay {
+      position: fixed;
+      inset: 0;
+      background: transparent;
+      z-index: 1100;
+      display: none;
+    }
+    #settingsOverlay.visible { display: block; }
+
+    /* ── Settings panel ── */
+    #settingsPanel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(320px, 88vw);
+      height: 100vh;
+      background: rgba(18, 18, 18, 0.97);
+      z-index: 1200;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.6);
+      font-family: Arial, sans-serif;
+    }
+    #settingsPanel.open { transform: translateX(0); }
+
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .settings-header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.3px;
+    }
+    #closePanelBtn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #closePanelBtn svg { width: 20px; height: 20px; fill: #aaaaaa; }
+
+    .settings-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0 24px;
+    }
+
+    .settings-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #888888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 16px 20px 6px;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .row-info { flex: 1; margin-right: 12px; }
+    .row-label { font-size: 15px; color: #eeeeee; display: block; }
+    .row-desc { font-size: 12px; color: #777777; display: block; margin-top: 2px; }
+
+    /* ── Toggle switch ── */
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #444;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle input:checked + .toggle-track { background: #4CAF50; }
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      background: #ffffff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      pointer-events: none;
+    }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+
+    /* ── Sliders ── */
+    .slider-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .slider-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .slider-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #4CAF50;
+      min-width: 38px;
+      text-align: right;
+    }
+    input[type=range] {
+      width: 100%;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #444;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+      border: none;
+    }
+
+    /* ── Forced drink picker ── */
+    .drink-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 4px 20px 16px;
+    }
+    .drink-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .drink-option.selected {
+      border-color: #4CAF50;
+      background: rgba(76,175,80,0.12);
+    }
+    .drink-option input { display: none; }
+    .drink-swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .drink-option span.drink-name { font-size: 14px; color: #eeeeee; }
+
+    /* ── Reset button ── */
+    #resetBtn {
+      width: calc(100% - 40px);
+      margin: 8px 20px;
+      padding: 13px;
+      background: rgba(255,59,48,0.15);
+      color: #ff6b6b;
+      border: 1px solid rgba(255,59,48,0.3);
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #resetBtn:active { background: rgba(255,59,48,0.3); }
+
+    .settings-version {
+      text-align: center;
+      font-size: 11px;
+      color: #555;
+      padding: 16px 20px 0;
+    }
   </style>
 </head>
 <body>
-  <div class="gallery-container">
-    <div class="gallery">
-      <img src="https://i.imgur.com/NTpM7zB.jpg" alt="Agua Mineral">
-      <img src="https://i.imgur.com/8NB2kyD.jpg" alt="Agua de Coco">
-      <img src="https://i.imgur.com/cLVENtZ.jpg" alt="Coca-Cola">
-      <img src="https://i.imgur.com/N5Dw0uI.jpg" alt="Gatorade">
-      <img src="https://i.imgur.com/jibpP7q.jpg" alt="Jugo de Mango">
-      <img src="https://i.imgur.com/ZS1JtFE.jpg" alt="Jugo de Mora">
-      <img src="https://i.imgur.com/bDjSxj7.jpg" alt="Pony Malta">
-      <img src="https://i.imgur.com/xbHO4ET.jpg" alt="Sprite">
-      <img src="https://i.imgur.com/752qncM.jpg" alt="Coca-Cola Zero">
-    </div>
+  <div class="gallery-container" id="galleryContainer">
+    <div class="gallery" id="gallery"></div>
   </div>
 
   <div id="touchCounter">0</div>
   <button id="installButton">Instalar App</button>
 
-  <img id="fullScreenImage" src="https://i.imgur.com/CDkvzSZ.jpg" alt="Imagen especial">
+  <img id="fullScreenImage" src="https://i.imgur.com/EyshxT7.jpg" alt="Bebida forzada">
+
+  <!-- Settings button -->
+  <button id="settingsBtn" aria-label="Configuración">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61
+        l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81
+        c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29
+        L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58
+        C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61
+        l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54
+        c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94
+        l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z
+        M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+    </svg>
+  </button>
+
+  <div id="settingsOverlay"></div>
+
+  <!-- Settings panel -->
+  <div id="settingsPanel" role="dialog" aria-label="Configuración">
+    <div class="settings-header">
+      <h2>Configuración</h2>
+      <button id="closePanelBtn" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="settings-body">
+
+      <div class="settings-section-label">Interacción</div>
+
+      <div class="settings-row slider-row">
+        <div class="slider-top">
+          <div class="row-info">
+            <span class="row-label">Umbral de toques</span>
+            <span class="row-desc">Toques para activar el forzaje</span>
+          </div>
+          <span class="slider-value" id="thresholdValue">10</span>
+        </div>
+        <input type="range" id="thresholdSlider" min="1" max="50" value="10" step="1">
+      </div>
+
+      <div class="settings-section-label">Forzaje</div>
+
+      <div class="drink-options" id="drinkOptions">
+        <label class="drink-option" data-value="verde">
+          <input type="radio" name="forcedDrink" value="verde">
+          <span class="drink-swatch" style="background:#17b9b5"></span>
+          <span class="drink-name">HATSU Verde</span>
+        </label>
+        <label class="drink-option" data-value="amarillo">
+          <input type="radio" name="forcedDrink" value="amarillo">
+          <span class="drink-swatch" style="background:#f2c40c"></span>
+          <span class="drink-name">HATSU Amarillo</span>
+        </label>
+        <label class="drink-option" data-value="blanco">
+          <input type="radio" name="forcedDrink" value="blanco">
+          <span class="drink-swatch" style="background:#f5f5f5"></span>
+          <span class="drink-name">HATSU Blanco</span>
+        </label>
+      </div>
+
+      <div class="settings-section-label">Comportamiento</div>
+
+      <div class="settings-row">
+        <div class="row-info">
+          <span class="row-label">Vibración</span>
+          <span class="row-desc">Vibrar al activar el forzaje</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggleVibration" checked>
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+      </div>
+
+      <div class="settings-row">
+        <div class="row-info">
+          <span class="row-label">Pantalla completa</span>
+          <span class="row-desc">Activar pantalla completa automáticamente</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggleFullscreen" checked>
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+      </div>
+
+      <div class="settings-section-label">Interfaz</div>
+
+      <div class="settings-row">
+        <div class="row-info">
+          <span class="row-label">Scroll vertical</span>
+          <span class="row-desc">Deslizar en vertical en lugar de horizontal</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggleOrientation">
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+      </div>
+
+      <div class="settings-row">
+        <div class="row-info">
+          <span class="row-label">Mostrar contador</span>
+          <span class="row-desc">Mostrar el contador de toques</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggleCounter" checked>
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+      </div>
+
+      <div class="settings-row slider-row">
+        <div class="slider-top">
+          <div class="row-info">
+            <span class="row-label">Opacidad del contador</span>
+            <span class="row-desc">Visibilidad del contador de toques</span>
+          </div>
+          <span class="slider-value" id="counterOpacityValue">100%</span>
+        </div>
+        <input type="range" id="counterOpacitySlider" min="5" max="100" value="100" step="5">
+      </div>
+
+      <div class="settings-row slider-row">
+        <div class="slider-top">
+          <div class="row-info">
+            <span class="row-label">Tamaño del contador</span>
+            <span class="row-desc">Tamaño del texto del contador de toques</span>
+          </div>
+          <span class="slider-value" id="counterSizeValue">12px</span>
+        </div>
+        <input type="range" id="counterSizeSlider" min="10" max="32" value="12" step="1">
+      </div>
+
+      <div class="settings-row slider-row">
+        <div class="slider-top">
+          <div class="row-info">
+            <span class="row-label">Opacidad del botón</span>
+            <span class="row-desc">Visibilidad del botón de configuración</span>
+          </div>
+          <span class="slider-value" id="btnOpacityValue">100%</span>
+        </div>
+        <input type="range" id="btnOpacitySlider" min="5" max="100" value="100" step="5">
+      </div>
+
+      <div class="settings-section-label">Acciones</div>
+      <button id="resetBtn">Reiniciar contador</button>
+
+      <p class="settings-version">Galería de Bebidas · v2.0</p>
+    </div>
+  </div>
 
   <script>
-    // Contador de toques
+    // ── Source images ─────────────────────────────────────────
+    const IMAGES = [
+      { src: 'https://i.imgur.com/NTpM7zB.jpg', alt: 'Agua Mineral' },
+      { src: 'https://i.imgur.com/8NB2kyD.jpg', alt: 'Agua de Coco' },
+      { src: 'https://i.imgur.com/cLVENtZ.jpg', alt: 'Coca-Cola' },
+      { src: 'https://i.imgur.com/N5Dw0uI.jpg', alt: 'Gatorade' },
+      { src: 'https://i.imgur.com/jibpP7q.jpg', alt: 'Jugo de Mango' },
+      { src: 'https://i.imgur.com/ZS1JtFE.jpg', alt: 'Jugo de Mora' },
+      { src: 'https://i.imgur.com/bDjSxj7.jpg', alt: 'Pony Malta' },
+      { src: 'https://i.imgur.com/xbHO4ET.jpg', alt: 'Sprite' },
+      { src: 'https://i.imgur.com/752qncM.jpg', alt: 'Coca-Cola Zero' },
+      { src: 'https://i.imgur.com/EyshxT7.jpg', alt: 'HATSU Verde' },
+      { src: 'https://i.imgur.com/gf52axE.jpg', alt: 'HATSU Amarillo' },
+      { src: 'https://i.imgur.com/NZXA6Zg.jpg', alt: 'HATSU Blanco' },
+    ];
+
+    // ── Bebidas disponibles para forzar ──────────────────────────
+    const FORCED_DRINKS = {
+      verde:    { src: 'https://i.imgur.com/EyshxT7.jpg', alt: 'HATSU Verde' },
+      amarillo: { src: 'https://i.imgur.com/gf52axE.jpg', alt: 'HATSU Amarillo' },
+      blanco:   { src: 'https://i.imgur.com/NZXA6Zg.jpg', alt: 'HATSU Blanco' },
+    };
+
+    // ── Settings ──────────────────────────────────────────────
+    const DEFAULTS = {
+      threshold: 10,
+      forcedDrink: 'verde',
+      vibration: true,
+      fullscreen: true,
+      vertical: false,
+      showCounter: true,
+      counterOpacity: 100,
+      counterSize: 12,
+      btnOpacity: 100,
+    };
+
+    function loadSettings() {
+      try {
+        return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('gb-settings') || '{}') };
+      } catch { return { ...DEFAULTS }; }
+    }
+    function saveSettings() {
+      localStorage.setItem('gb-settings', JSON.stringify(settings));
+    }
+
+    let settings = loadSettings();
+
+    // ── DOM refs ──────────────────────────────────────────────
+    const gallery            = document.getElementById('gallery');
+    const touchCounterEl     = document.getElementById('touchCounter');
+    const fullScreenImage    = document.getElementById('fullScreenImage');
+    const settingsBtn        = document.getElementById('settingsBtn');
+    const settingsPanel      = document.getElementById('settingsPanel');
+    const settingsOverlay    = document.getElementById('settingsOverlay');
+    const closePanelBtn      = document.getElementById('closePanelBtn');
+    const thresholdSlider    = document.getElementById('thresholdSlider');
+    const thresholdValue     = document.getElementById('thresholdValue');
+    const drinkOptions       = document.getElementById('drinkOptions');
+    const toggleVibration    = document.getElementById('toggleVibration');
+    const toggleFullscreen   = document.getElementById('toggleFullscreen');
+    const toggleOrientation  = document.getElementById('toggleOrientation');
+    const toggleCounter      = document.getElementById('toggleCounter');
+    const counterOpacitySlider = document.getElementById('counterOpacitySlider');
+    const counterOpacityValue  = document.getElementById('counterOpacityValue');
+    const counterSizeSlider  = document.getElementById('counterSizeSlider');
+    const counterSizeValue   = document.getElementById('counterSizeValue');
+    const btnOpacitySlider   = document.getElementById('btnOpacitySlider');
+    const btnOpacityValue    = document.getElementById('btnOpacityValue');
+    const resetBtn           = document.getElementById('resetBtn');
+    const installButton      = document.getElementById('installButton');
+
     let touchCount = 0;
-    const touchCounterElement = document.getElementById("touchCounter");
     let isCounting = true;
 
-    function incrementTouchCount() {
+    // ── Gallery ───────────────────────────────────────────────
+    function buildGallery() {
+      gallery.innerHTML = '';
+      IMAGES.forEach(({ src, alt }) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = alt;
+        gallery.appendChild(img);
+      });
+    }
+
+    // ── Orientation ───────────────────────────────────────────
+    function applyOrientation() {
+      document.body.classList.toggle('vertical', settings.vertical);
+    }
+
+    // ── Forced drink ──────────────────────────────────────────
+    function applyForcedDrink() {
+      const drink = FORCED_DRINKS[settings.forcedDrink] || FORCED_DRINKS.verde;
+      fullScreenImage.src = drink.src;
+      fullScreenImage.alt = drink.alt;
+      drinkOptions.querySelectorAll('.drink-option').forEach(opt => {
+        const isSelected = opt.dataset.value === settings.forcedDrink;
+        opt.classList.toggle('selected', isSelected);
+        opt.querySelector('input').checked = isSelected;
+      });
+    }
+
+    // ── Counter appearance helpers ─────────────────────────────
+    function applyCounterOpacity() {
+      touchCounterEl.style.opacity = settings.showCounter ? settings.counterOpacity / 100 : '0';
+    }
+    function applyCounterSize() {
+      touchCounterEl.style.fontSize = settings.counterSize + 'px';
+    }
+
+    // ── Apply all settings ────────────────────────────────────
+    function applySettings() {
+      thresholdSlider.value        = settings.threshold;
+      thresholdValue.textContent   = settings.threshold;
+      toggleVibration.checked      = settings.vibration;
+      toggleFullscreen.checked     = settings.fullscreen;
+      toggleOrientation.checked    = settings.vertical;
+      toggleCounter.checked        = settings.showCounter;
+      counterOpacitySlider.value      = settings.counterOpacity;
+      counterOpacityValue.textContent = settings.counterOpacity + '%';
+      counterSizeSlider.value      = settings.counterSize;
+      counterSizeValue.textContent = settings.counterSize + 'px';
+      btnOpacitySlider.value       = settings.btnOpacity;
+      btnOpacityValue.textContent  = settings.btnOpacity + '%';
+
+      applyCounterOpacity();
+      applyCounterSize();
+      settingsBtn.style.opacity    = settings.btnOpacity / 100;
+
+      applyOrientation();
+      applyForcedDrink();
+    }
+
+    // ── Settings panel open/close ─────────────────────────────
+    function openPanel() {
+      settingsPanel.classList.add('open');
+      settingsOverlay.classList.add('visible');
+      settingsBtn.classList.add('open');
+      settingsBtn.style.opacity = '1';
+    }
+
+    function closePanel() {
+      settingsPanel.classList.remove('open');
+      settingsOverlay.classList.remove('visible');
+      settingsBtn.classList.remove('open');
+      settingsBtn.style.opacity = settings.btnOpacity / 100;
+    }
+
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      settingsPanel.classList.contains('open') ? closePanel() : openPanel();
+    });
+    closePanelBtn.addEventListener('click', closePanel);
+    settingsOverlay.addEventListener('click', closePanel);
+
+    settingsPanel.addEventListener('touchstart', (e) => e.stopPropagation());
+    settingsPanel.addEventListener('click', (e) => e.stopPropagation());
+
+    // ── Settings controls ─────────────────────────────────────
+    thresholdSlider.addEventListener('input', () => {
+      settings.threshold = parseInt(thresholdSlider.value);
+      thresholdValue.textContent = settings.threshold;
+      saveSettings();
+    });
+
+    drinkOptions.addEventListener('click', (e) => {
+      const option = e.target.closest('.drink-option');
+      if (!option) return;
+      settings.forcedDrink = option.dataset.value;
+      applyForcedDrink();
+      saveSettings();
+    });
+
+    toggleVibration.addEventListener('change', () => {
+      settings.vibration = toggleVibration.checked;
+      saveSettings();
+    });
+
+    toggleFullscreen.addEventListener('change', () => {
+      settings.fullscreen = toggleFullscreen.checked;
+      saveSettings();
+    });
+
+    toggleOrientation.addEventListener('change', () => {
+      settings.vertical = toggleOrientation.checked;
+      saveSettings();
+      applyOrientation();
+    });
+
+    toggleCounter.addEventListener('change', () => {
+      settings.showCounter = toggleCounter.checked;
+      applyCounterOpacity();
+      saveSettings();
+    });
+
+    counterOpacitySlider.addEventListener('input', () => {
+      settings.counterOpacity = parseInt(counterOpacitySlider.value);
+      counterOpacityValue.textContent = settings.counterOpacity + '%';
+      applyCounterOpacity();
+      saveSettings();
+    });
+
+    counterSizeSlider.addEventListener('input', () => {
+      settings.counterSize = parseInt(counterSizeSlider.value);
+      counterSizeValue.textContent = settings.counterSize + 'px';
+      applyCounterSize();
+      saveSettings();
+    });
+
+    btnOpacitySlider.addEventListener('input', () => {
+      settings.btnOpacity = parseInt(btnOpacitySlider.value);
+      btnOpacityValue.textContent = settings.btnOpacity + '%';
+      if (!settingsPanel.classList.contains('open')) {
+        settingsBtn.style.opacity = settings.btnOpacity / 100;
+      }
+      saveSettings();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      touchCount = 0;
+      isCounting = true;
+      touchCounterEl.textContent = '0';
+      fullScreenImage.style.display = 'none';
+    });
+
+    // ── Touch counter ─────────────────────────────────────────
+    function incrementTouchCount(e) {
+      if (settingsPanel.contains(e.target) || settingsBtn.contains(e.target)) return;
       if (!isCounting) return;
+
       touchCount++;
-      touchCounterElement.textContent = touchCount;
-      if (touchCount >= 10) {
-        const fullScreenImage = document.getElementById("fullScreenImage");
-        fullScreenImage.style.display = "block";
+      touchCounterEl.textContent = touchCount;
+
+      if (touchCount >= settings.threshold) {
+        fullScreenImage.style.display = 'block';
         isCounting = false;
-        if (navigator.vibrate) navigator.vibrate(200);
-        enterFullscreen();
+        if (settings.vibration && navigator.vibrate) navigator.vibrate(200);
+        if (settings.fullscreen) enterFullscreen();
       }
     }
 
@@ -122,14 +745,11 @@
     }
 
     function lockOrientation() {
-      if (screen.orientation?.lock) {
-        screen.orientation.lock('portrait').catch(() => {});
-      }
+      if (screen.orientation?.lock) screen.orientation.lock('portrait').catch(() => {});
     }
 
-    // Instalación PWA
+    // ── Instalación PWA ───────────────────────────────────────
     let deferredPrompt;
-    const installButton = document.getElementById('installButton');
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
@@ -143,21 +763,21 @@
       deferredPrompt = null;
     });
 
-    // Service Worker
+    // ── Service Worker ────────────────────────────────────────
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('SW registrado'))
-      .catch(err => console.log('Error SW:', err));
+        .then(() => console.log('SW registrado'))
+        .catch(err => console.log('Error SW:', err));
     }
 
-    // Eventos iniciales
-    document.addEventListener("DOMContentLoaded", () => {
-      document.body.addEventListener("touchstart", incrementTouchCount);
+    // ── Eventos iniciales ─────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      applySettings();
+      buildGallery();
+      document.body.addEventListener('touchstart', incrementTouchCount);
+
       if (window.matchMedia('(display-mode: standalone)').matches) {
-        setTimeout(() => {
-          lockOrientation();
-          enterFullscreen();
-        }, 500);
+        setTimeout(() => { lockOrientation(); enterFullscreen(); }, 500);
       }
     });
   </script>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'galeria-v7';
+const CACHE_NAME = 'galeria-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -14,7 +14,9 @@ const ASSETS = [
   'https://i.imgur.com/bDjSxj7.jpg',
   'https://i.imgur.com/xbHO4ET.jpg',
   'https://i.imgur.com/752qncM.jpg',
-  'https://i.imgur.com/CDkvzSZ.jpg'
+  'https://i.imgur.com/EyshxT7.jpg',
+  'https://i.imgur.com/gf52axE.jpg',
+  'https://i.imgur.com/NZXA6Zg.jpg'
 ];
 
 self.addEventListener('install', (event) => {

@@ -460,12 +460,34 @@
       <div class="settings-row slider-row">
         <div class="slider-top">
           <div class="row-info">
+            <span class="row-label">Opacidad del contador</span>
+            <span class="row-desc">Visibilidad del contador de toques</span>
+          </div>
+          <span class="slider-value" id="counterOpacityValue">100%</span>
+        </div>
+        <input type="range" id="counterOpacitySlider" min="5" max="100" value="100" step="5">
+      </div>
+
+      <div class="settings-row slider-row">
+        <div class="slider-top">
+          <div class="row-info">
+            <span class="row-label">Tamaño del contador</span>
+            <span class="row-desc">Tamaño del texto del contador de toques</span>
+          </div>
+          <span class="slider-value" id="counterSizeValue">12px</span>
+        </div>
+        <input type="range" id="counterSizeSlider" min="10" max="32" value="12" step="1">
+      </div>
+
+      <div class="settings-row slider-row">
+        <div class="slider-top">
+          <div class="row-info">
             <span class="row-label">Opacidad del botón</span>
             <span class="row-desc">Visibilidad del botón de configuración</span>
           </div>
-          <span class="slider-value" id="opacityValue">100%</span>
+          <span class="slider-value" id="btnOpacityValue">100%</span>
         </div>
-        <input type="range" id="opacitySlider" min="5" max="100" value="100" step="5">
+        <input type="range" id="btnOpacitySlider" min="5" max="100" value="100" step="5">
       </div>
 
       <div class="settings-section-label">Acciones</div>
@@ -507,6 +529,8 @@
       fullscreen: true,
       vertical: false,
       showCounter: true,
+      counterOpacity: 100,
+      counterSize: 12,
       btnOpacity: 100,
     };
 
@@ -536,8 +560,12 @@
     const toggleFullscreen   = document.getElementById('toggleFullscreen');
     const toggleOrientation  = document.getElementById('toggleOrientation');
     const toggleCounter      = document.getElementById('toggleCounter');
-    const opacitySlider      = document.getElementById('opacitySlider');
-    const opacityValue       = document.getElementById('opacityValue');
+    const counterOpacitySlider = document.getElementById('counterOpacitySlider');
+    const counterOpacityValue  = document.getElementById('counterOpacityValue');
+    const counterSizeSlider  = document.getElementById('counterSizeSlider');
+    const counterSizeValue   = document.getElementById('counterSizeValue');
+    const btnOpacitySlider   = document.getElementById('btnOpacitySlider');
+    const btnOpacityValue    = document.getElementById('btnOpacityValue');
     const resetBtn           = document.getElementById('resetBtn');
     const installButton      = document.getElementById('installButton');
 
@@ -572,18 +600,31 @@
       });
     }
 
+    // ── Counter appearance helpers ─────────────────────────────
+    function applyCounterOpacity() {
+      touchCounterEl.style.opacity = settings.showCounter ? settings.counterOpacity / 100 : '0';
+    }
+    function applyCounterSize() {
+      touchCounterEl.style.fontSize = settings.counterSize + 'px';
+    }
+
     // ── Apply all settings ────────────────────────────────────
     function applySettings() {
-      thresholdSlider.value      = settings.threshold;
-      thresholdValue.textContent = settings.threshold;
-      toggleVibration.checked    = settings.vibration;
-      toggleFullscreen.checked   = settings.fullscreen;
-      toggleOrientation.checked  = settings.vertical;
-      toggleCounter.checked      = settings.showCounter;
-      opacitySlider.value        = settings.btnOpacity;
-      opacityValue.textContent   = settings.btnOpacity + '%';
+      thresholdSlider.value        = settings.threshold;
+      thresholdValue.textContent   = settings.threshold;
+      toggleVibration.checked      = settings.vibration;
+      toggleFullscreen.checked     = settings.fullscreen;
+      toggleOrientation.checked    = settings.vertical;
+      toggleCounter.checked        = settings.showCounter;
+      counterOpacitySlider.value      = settings.counterOpacity;
+      counterOpacityValue.textContent = settings.counterOpacity + '%';
+      counterSizeSlider.value      = settings.counterSize;
+      counterSizeValue.textContent = settings.counterSize + 'px';
+      btnOpacitySlider.value       = settings.btnOpacity;
+      btnOpacityValue.textContent  = settings.btnOpacity + '%';
 
-      touchCounterEl.style.opacity = settings.showCounter ? '1' : '0';
+      applyCounterOpacity();
+      applyCounterSize();
       settingsBtn.style.opacity    = settings.btnOpacity / 100;
 
       applyOrientation();
@@ -648,13 +689,27 @@
 
     toggleCounter.addEventListener('change', () => {
       settings.showCounter = toggleCounter.checked;
-      touchCounterEl.style.opacity = settings.showCounter ? '1' : '0';
+      applyCounterOpacity();
       saveSettings();
     });
 
-    opacitySlider.addEventListener('input', () => {
-      settings.btnOpacity = parseInt(opacitySlider.value);
-      opacityValue.textContent = settings.btnOpacity + '%';
+    counterOpacitySlider.addEventListener('input', () => {
+      settings.counterOpacity = parseInt(counterOpacitySlider.value);
+      counterOpacityValue.textContent = settings.counterOpacity + '%';
+      applyCounterOpacity();
+      saveSettings();
+    });
+
+    counterSizeSlider.addEventListener('input', () => {
+      settings.counterSize = parseInt(counterSizeSlider.value);
+      counterSizeValue.textContent = settings.counterSize + 'px';
+      applyCounterSize();
+      saveSettings();
+    });
+
+    btnOpacitySlider.addEventListener('input', () => {
+      settings.btnOpacity = parseInt(btnOpacitySlider.value);
+      btnOpacityValue.textContent = settings.btnOpacity + '%';
       if (!settingsPanel.classList.contains('open')) {
         settingsBtn.style.opacity = settings.btnOpacity / 100;
       }

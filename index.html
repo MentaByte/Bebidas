@@ -17,39 +17,34 @@
       background-color: #ffffff;
       height: 100vh;
       width: 100vw;
-      touch-action: pan-x;
     }
 
-    /* ── Gallery: horizontal (default) ── */
+    /* ── Gallery: horizontal (default) ──
+       Native scrolling is disabled; the .gallery track is dragged and
+       snapped manually via transform so we can control drag weight,
+       snap speed, and wrap the slides for a seamless infinite loop. */
     .gallery-container {
+      position: relative;
       width: 100vw;
       height: 100vh;
-      overflow-x: auto;
-      overflow-y: hidden;
-      scroll-snap-type: x mandatory;
-      display: flex;
-      -webkit-overflow-scrolling: touch;
+      overflow: hidden;
+      touch-action: none;
     }
     .gallery {
       display: flex;
       height: 100vh;
+      will-change: transform;
     }
     .gallery img {
       width: 100vw;
       height: 100vh;
       object-fit: contain;
-      scroll-snap-align: start;
       flex: 0 0 auto;
+      -webkit-user-drag: none;
+      user-select: none;
     }
 
     /* ── Gallery: vertical mode ── */
-    body.vertical { touch-action: pan-y; }
-    body.vertical .gallery-container {
-      overflow-x: hidden;
-      overflow-y: auto;
-      scroll-snap-type: y mandatory;
-      flex-direction: column;
-    }
     body.vertical .gallery {
       flex-direction: column;
       height: auto;
@@ -546,6 +541,7 @@
     let settings = loadSettings();
 
     // ── DOM refs ──────────────────────────────────────────────
+    const galleryContainer   = document.getElementById('galleryContainer');
     const gallery            = document.getElementById('gallery');
     const touchCounterEl     = document.getElementById('touchCounter');
     const fullScreenImage    = document.getElementById('fullScreenImage');
@@ -572,20 +568,127 @@
     let touchCount = 0;
     let isCounting = true;
 
-    // ── Gallery ───────────────────────────────────────────────
+    // ── Gallery: infinite drag carousel ────────────────────────
+    // Three copies of the image set are laid out back to back
+    // ([clones][originals][clones]); dragging is handled manually via
+    // transform so the drag weight and snap speed can be slowed down,
+    // and once a snap settles just outside the middle copy we silently
+    // jump ±N slides back into it (identical image, no visible seam),
+    // which makes the loop feel endless in either direction.
+    const N = IMAGES.length;
+    const DRAG_DAMPING = 0.45;
+    const SNAP_DURATION = 650;
+    const SNAP_EASING = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+
+    let slideSize = 1;
+    let currentIndex = N;
+    let currentTranslate = 0;
+    let isDragging = false;
+    let dragStartPos = 0;
+    let dragStartTranslate = 0;
+    let rawDelta = 0;   // actual finger travel, used to decide which slide to snap to
+    let dragDelta = 0;  // damped travel, used only for the on-screen visual (heavier feel)
+    let wrapTimer = null;
+
     function buildGallery() {
       gallery.innerHTML = '';
-      IMAGES.forEach(({ src, alt }) => {
-        const img = document.createElement('img');
-        img.src = src;
-        img.alt = alt;
-        gallery.appendChild(img);
-      });
+      for (let set = 0; set < 3; set++) {
+        IMAGES.forEach(({ src, alt }) => {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = alt;
+          img.draggable = false;
+          gallery.appendChild(img);
+        });
+      }
     }
+
+    function getAxisSize() {
+      return settings.vertical ? window.innerHeight : window.innerWidth;
+    }
+
+    function setTranslate(px, animate) {
+      gallery.style.transition = animate ? `transform ${SNAP_DURATION}ms ${SNAP_EASING}` : 'none';
+      gallery.style.transform = settings.vertical ? `translateY(${px}px)` : `translateX(${px}px)`;
+    }
+
+    function goToIndex(index, animate) {
+      currentIndex = index;
+      currentTranslate = -index * slideSize;
+      setTranslate(currentTranslate, animate);
+    }
+
+    // Once settled outside the middle copy, wrap silently into it.
+    function correctInfiniteWrap() {
+      if (currentIndex < N || currentIndex >= 2 * N) {
+        currentIndex = ((currentIndex - N) % N + N) % N + N;
+        currentTranslate = -currentIndex * slideSize;
+        setTranslate(currentTranslate, false);
+      }
+    }
+
+    function initGalleryPosition() {
+      slideSize = getAxisSize();
+      goToIndex(currentIndex, false);
+    }
+
+    function pointerPos(e) {
+      const point = e.touches ? e.touches[0] : e;
+      return settings.vertical ? point.clientY : point.clientX;
+    }
+
+    function onDragStart(e) {
+      isDragging = true;
+      clearTimeout(wrapTimer);
+      gallery.style.transition = 'none';
+      dragStartPos = pointerPos(e);
+      dragStartTranslate = currentTranslate;
+      rawDelta = 0;
+      dragDelta = 0;
+    }
+
+    function onDragMove(e) {
+      if (!isDragging) return;
+      rawDelta = pointerPos(e) - dragStartPos;
+      dragDelta = rawDelta * DRAG_DAMPING;
+      setTranslate(dragStartTranslate + dragDelta, false);
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onDragEnd() {
+      if (!isDragging) return;
+      isDragging = false;
+      // Decide the target slide from the real finger travel (rawDelta), not
+      // the damped visual one, so a normal full-width swipe still advances
+      // even though it only appeared to move part of the way there.
+      const targetIndex = Math.round(-(dragStartTranslate + rawDelta) / slideSize);
+      goToIndex(targetIndex, true);
+      wrapTimer = setTimeout(correctInfiniteWrap, SNAP_DURATION + 30);
+    }
+
+    galleryContainer.addEventListener('touchstart', onDragStart, { passive: true });
+    galleryContainer.addEventListener('touchmove', onDragMove, { passive: false });
+    galleryContainer.addEventListener('touchend', onDragEnd);
+    galleryContainer.addEventListener('touchcancel', onDragEnd);
+
+    galleryContainer.addEventListener('mousedown', (e) => {
+      onDragStart(e);
+      const onMouseMove = (ev) => onDragMove(ev);
+      const onMouseUp = () => {
+        onDragEnd();
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    });
+
+    window.addEventListener('resize', initGalleryPosition);
 
     // ── Orientation ───────────────────────────────────────────
     function applyOrientation() {
       document.body.classList.toggle('vertical', settings.vertical);
+      initGalleryPosition();
     }
 
     // ── Forced drink ──────────────────────────────────────────
@@ -772,8 +875,8 @@
 
     // ── Eventos iniciales ─────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
-      applySettings();
       buildGallery();
+      applySettings();
       document.body.addEventListener('touchstart', incrementTouchCount);
 
       if (window.matchMedia('(display-mode: standalone)').matches) {

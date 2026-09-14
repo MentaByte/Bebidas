@@ -73,6 +73,9 @@
       object-fit: contain;
       background-color: white;
       z-index: 9999;
+      -webkit-user-drag: none;
+      -webkit-touch-callout: none;
+      user-select: none;
     }
     #installButton {
       position: fixed;
@@ -414,18 +417,6 @@
         </label>
       </div>
 
-      <div class="settings-row">
-        <div class="row-info">
-          <span class="row-label">Pantalla completa</span>
-          <span class="row-desc">Activar pantalla completa automáticamente</span>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" id="toggleFullscreen" checked>
-          <span class="toggle-track"></span>
-          <span class="toggle-thumb"></span>
-        </label>
-      </div>
-
       <div class="settings-section-label">Interfaz</div>
 
       <div class="settings-row">
@@ -495,7 +486,7 @@
   <script>
     // Keep in sync with CACHE_NAME in sw.js, so the panel always shows
     // which version is actually running (useful to confirm an update landed).
-    const APP_VERSION = 'v10';
+    const APP_VERSION = 'v11';
 
     // ── Source images ─────────────────────────────────────────
     const IMAGES = [
@@ -525,7 +516,6 @@
       threshold: 10,
       forcedDrink: 'verde',
       vibration: true,
-      fullscreen: true,
       vertical: false,
       showCounter: true,
       counterOpacity: 100,
@@ -557,7 +547,6 @@
     const thresholdValue     = document.getElementById('thresholdValue');
     const drinkOptions       = document.getElementById('drinkOptions');
     const toggleVibration    = document.getElementById('toggleVibration');
-    const toggleFullscreen   = document.getElementById('toggleFullscreen');
     const toggleOrientation  = document.getElementById('toggleOrientation');
     const toggleCounter      = document.getElementById('toggleCounter');
     const counterOpacitySlider = document.getElementById('counterOpacitySlider');
@@ -581,9 +570,9 @@
     // jump ±N slides back into it (identical image, no visible seam),
     // which makes the loop feel endless in either direction.
     const N = IMAGES.length;
-    const DRAG_DAMPING = 0.45;
-    const SNAP_DURATION = 650;
-    const SNAP_EASING = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+    const DRAG_DAMPING = 0.75;
+    const SNAP_DURATION = 420;
+    const SNAP_EASING = 'cubic-bezier(0.33, 1, 0.68, 1)';
 
     let slideSize = 1;
     let currentIndex = N;
@@ -721,7 +710,6 @@
       thresholdSlider.value        = settings.threshold;
       thresholdValue.textContent   = settings.threshold;
       toggleVibration.checked      = settings.vibration;
-      toggleFullscreen.checked     = settings.fullscreen;
       toggleOrientation.checked    = settings.vertical;
       toggleCounter.checked        = settings.showCounter;
       counterOpacitySlider.value      = settings.counterOpacity;
@@ -784,11 +772,6 @@
       saveSettings();
     });
 
-    toggleFullscreen.addEventListener('change', () => {
-      settings.fullscreen = toggleFullscreen.checked;
-      saveSettings();
-    });
-
     toggleOrientation.addEventListener('change', () => {
       settings.vertical = toggleOrientation.checked;
       saveSettings();
@@ -840,10 +823,12 @@
       touchCounterEl.textContent = touchCount;
 
       if (touchCount >= settings.threshold) {
+        // Shown as a normal fixed overlay, not the real Fullscreen API:
+        // that used to change the browser chrome and pop up its own
+        // "now in full screen" warning, which looked broken.
         fullScreenImage.style.display = 'block';
         isCounting = false;
         if (settings.vibration && navigator.vibrate) navigator.vibrate(200);
-        if (settings.fullscreen) enterFullscreen();
       }
     }
 

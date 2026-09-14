@@ -488,11 +488,15 @@
       <div class="settings-section-label">Acciones</div>
       <button id="resetBtn">Reiniciar contador</button>
 
-      <p class="settings-version">Galería de Bebidas · v2.0</p>
+      <p class="settings-version" id="versionLabel"></p>
     </div>
   </div>
 
   <script>
+    // Keep in sync with CACHE_NAME in sw.js, so the panel always shows
+    // which version is actually running (useful to confirm an update landed).
+    const APP_VERSION = 'v10';
+
     // ── Source images ─────────────────────────────────────────
     const IMAGES = [
       { src: 'https://i.imgur.com/NTpM7zB.jpg', alt: 'Agua Mineral' },
@@ -563,6 +567,7 @@
     const btnOpacitySlider   = document.getElementById('btnOpacitySlider');
     const btnOpacityValue    = document.getElementById('btnOpacityValue');
     const resetBtn           = document.getElementById('resetBtn');
+    const versionLabel       = document.getElementById('versionLabel');
     const installButton      = document.getElementById('installButton');
 
     let touchCount = 0;
@@ -867,14 +872,25 @@
     });
 
     // ── Service Worker ────────────────────────────────────────
+    // The new SW takes over immediately (skipWaiting + clients.claim in
+    // sw.js) instead of waiting for every open tab/instance to be closed;
+    // reload once so this page picks up the fresh assets right away.
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js')
         .then(() => console.log('SW registrado'))
         .catch(err => console.log('Error SW:', err));
+
+      let reloadedForUpdate = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloadedForUpdate) return;
+        reloadedForUpdate = true;
+        window.location.reload();
+      });
     }
 
     // ── Eventos iniciales ─────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
+      versionLabel.textContent = `Galería de Bebidas · ${APP_VERSION}`;
       buildGallery();
       applySettings();
       document.body.addEventListener('touchstart', incrementTouchCount);

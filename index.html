@@ -867,10 +867,20 @@
     });
 
     // ── Service Worker ────────────────────────────────────────
+    // The new SW takes over immediately (skipWaiting + clients.claim in
+    // sw.js) instead of waiting for every open tab/instance to be closed;
+    // reload once so this page picks up the fresh assets right away.
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js')
         .then(() => console.log('SW registrado'))
         .catch(err => console.log('Error SW:', err));
+
+      let reloadedForUpdate = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloadedForUpdate) return;
+        reloadedForUpdate = true;
+        window.location.reload();
+      });
     }
 
     // ── Eventos iniciales ─────────────────────────────────────
